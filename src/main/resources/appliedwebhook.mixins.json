@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "top.realme.AppliedWebhook.mixin",
+  "mixins": [
+    "ExecutingCraftingJobAccessor",
+    "MixinCraftingCpuLogic"
+  ],
+  "client": [
+  ],
+  "server": [
+    "ExecutingCraftingJobAccessor",
+    "MixinCraftingCpuLogic"
+  ],
+  "compatibilityLevel": "JAVA_21",
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
