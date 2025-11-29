@@ -1,4 +1,0 @@
-#The port to listen on
-# Default: 11451
-# Range: 0 ~ 65535
-port = 11451

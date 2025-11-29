@@ -7,12 +7,14 @@ import com.mojang.logging.LogUtils;
 import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.realme.AppliedWebhook.ae.event.AECraftingJobFinishEvent;
+
 
 @Mixin(CraftingCpuLogic.class)
 public abstract class MixinCraftingCpuLogic {
@@ -31,7 +33,7 @@ public abstract class MixinCraftingCpuLogic {
      */
     @Inject(method = "finishJob", at = @At("HEAD"))
     private void ae2_beforeFinish(boolean success, CallbackInfo ci) {
-        LogUtils.getLogger().info("[AWH Mixin]finishJob");
+        LogUtils.getLogger().debug("[AWH Mixin]finishJob");
 
         ElapsedTimeTracker tracker = this.getElapsedTimeTracker();
         long time = 0;

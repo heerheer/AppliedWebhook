@@ -3,6 +3,7 @@ plugins {
     id 'maven-publish'
     id 'idea'
     id 'net.neoforged.moddev' version '2.0.116'
+
 }
 
 version = mod_version
@@ -11,6 +12,9 @@ group = mod_group_id
 repositories {
     mavenLocal()
     mavenCentral()
+    maven {
+        url "https://cursemaven.com"
+    }
 }
 
 base {
@@ -104,11 +108,17 @@ dependencies {
      //"org.appliedenergistics:appliedenergistics2:19.2.17:api"
     implementation "org.appliedenergistics:appliedenergistics2:19.2.17"
 
+    // 对homo的可选依赖
     implementation files("libs/homohttprouter-1.2.1.jar")
+
+    // 对高级AE的可选依赖
+    implementation "curse.maven:advae-1084104:7105167"
+    runtimeOnly "curse.maven:geckolib-388172:6659026"
+    runtimeOnly "curse.maven:glodium-957920:5614731"
 
     // 引入fastjson
     jarJar(implementation('com.alibaba.fastjson2:fastjson2:2.0.60'))
-    additionalRuntimeClasspath('com.alibaba.fastjson2:fastjson2:2.0.60')
+    //additionalRuntimeClasspath('com.alibaba.fastjson2:fastjson2:2.0.60')
 
 
 

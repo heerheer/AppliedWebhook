@@ -2,3 +2,9 @@
 /.gradle/
 /build/
 /build/classes/java/main/
+
+/gradle
+/run
+/libs
+
+.idea

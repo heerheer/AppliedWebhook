@@ -3,13 +3,12 @@
   "package": "top.realme.AppliedWebhook.mixin",
   "mixins": [
     "ExecutingCraftingJobAccessor",
+    "MixinAdvCraftingCpuLogic",
     "MixinCraftingCpuLogic"
   ],
   "client": [
   ],
   "server": [
-    "ExecutingCraftingJobAccessor",
-    "MixinCraftingCpuLogic"
   ],
   "compatibilityLevel": "JAVA_21",
   "injectors": {
