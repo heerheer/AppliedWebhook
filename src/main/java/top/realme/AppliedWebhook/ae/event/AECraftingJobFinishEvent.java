@@ -43,6 +43,9 @@ public class AECraftingJobFinishEvent extends Event {
      */
     public UUID playerUUID(){
 
+        if(playerId == null){
+            return null;
+        }
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
             return IPlayerRegistry.getMapping(server).getProfileId(playerId);

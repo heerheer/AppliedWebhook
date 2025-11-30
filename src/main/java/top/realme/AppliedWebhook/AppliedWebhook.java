@@ -99,8 +99,13 @@ public class AppliedWebhook {
             return;
         }
 
+        if(event.playerUUID() == null){
+            LOGGER.debug("自动任务, 不发送");
+            return;
+        }
+
         if (Config.sendOnlyOnLeave.get() && ServerPlayerUtil.isPlayerOnline(event.playerUUID())) {
-            LOGGER.debug("玩家 {} 在线, 配置为仅在离线时发送, 不发送", event.playerUUID());
+            LOGGER.debug("/玩家 {} 在线, 配置为仅在离线时发送, 不发送", event.playerUUID());
             return;
         }
 
