@@ -1,13 +1,20 @@
 package top.realme.AppliedWebhook.http;
 
+import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.AEKey;
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 import top.realme.AppliedWebhook.ae.AECraftingUtil;
 import top.realme.AppliedWebhook.ae.AEStorageUtil;
+import top.realme.AppliedWebhook.ae.model.AECratingPlan;
 import top.realme.AppliedWebhook.http.model.ReplyPayload;
 import top.realme.AppliedWebhook.data.PlayerAELinkStorage;
 import top.realme.AppliedWebhook.ae.AEGridQueryUtil;
@@ -16,6 +23,7 @@ import top.realme.mc.homohttprouter.http.RestResponse;
 import top.realme.mc.homohttprouter.http.RouteInfo;
 import top.realme.mc.homohttprouter.http.RouterRegistry;
 
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -47,6 +55,10 @@ public class AwhRoutes {
 
         final String CRAFTING_CPUS = "/crafting/<uuid>/cpus";
 
+        final String CRAFTING_CRAFTABLES = "/crafting/<uuid>/craftables";
+
+        final String CRAFTING_REQUEST = "/crafting/<uuid>/request";
+
         // Create RouteInfo
         RouteInfo info = new RouteInfo.Builder("appliedwebhook", "/awh")
                 .description("AppliedWebhook module HTTP API. 传入user uuid以获取用户绑定的ME网络信息")
@@ -56,6 +68,8 @@ public class AwhRoutes {
                 .route("GET", STORAGE_ITEMS_COUNT_ROUTE, "获取有关(名称包含搜索)物品在用户绑定的ME网络中的数量", "", "[{id:count}]")
                 .route("GET", STORAGE_MAX_THINGS, "获取用户绑定的ME网络中最多可以存储的物品数量", "", "[{id:count}]")
                 .route("GET", CRAFTING_CPUS, "获取用户绑定的ME网络中所有CPU的状态", "", "[{cpu:{busy,mode,{job}}}]")
+                .route("GET", CRAFTING_CRAFTABLES, "获取用户绑定的ME网络中所有可以合成的物品", "", "[{id:count}]")
+                .route("POST", CRAFTING_REQUEST, "请求用户绑定的ME网络中合成物品", "", "")
                 .build();
 
         // Register RouteInfo
@@ -103,6 +117,35 @@ public class AwhRoutes {
                     return handleQueryCpus(uuid);
                 }
 
+                if(restRequest.matchTemplate(CRAFTING_CRAFTABLES)) {
+                    logger.debug("handleQueryCraftables");
+                    String uuid = restRequest.pathParam(CRAFTING_CRAFTABLES, "uuid").get();
+
+                    var list = AECraftingUtil.craftables(UUID.fromString(uuid)).join();
+                    return RestResponse.ok(ReplyPayload.Success(list));
+                }
+
+                if(restRequest.matchTemplate(CRAFTING_REQUEST)) {
+                    logger.debug("handleCraftingRequest");
+                    String uuid = restRequest.pathParam(CRAFTING_REQUEST, "uuid").get();
+
+                    // 先忽略body
+                    AEKey key = AEItemKey.of(new ItemStack(BuiltInRegistries.ITEM.get(ResourceLocation.parse("minecraft:iron_ingot"))));
+
+                    if(!AECraftingUtil.canCraft(UUID.fromString(uuid), key).join()) {
+                        return RestResponse.error(400, ReplyPayload.Error("无法合成的物品", 400));
+                    }
+
+                    var plan = AECraftingUtil.sim(UUID.fromString(uuid), key , 1).join();
+
+                    return RestResponse.ok(
+                            ReplyPayload.Success(new AECratingPlan(plan))
+                    );
+                }
+
+
+
+
                 return RestResponse.error(404, ReplyPayload.NotFound());
 
             } catch (Exception exception) {
@@ -121,11 +164,13 @@ public class AwhRoutes {
     // 处理 /networks 请求
     private static RestResponse handleNetworks() {
 
-        PlayerAELinkStorage storage = null;
-        if (ServerLifecycleHooks.getCurrentServer() != null) {
-            storage = PlayerAELinkStorage.get(
-                    Objects.requireNonNull(ServerLifecycleHooks.getCurrentServer().getLevel(ServerLevel.OVERWORLD)));
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if(server == null) {
+            return RestResponse.error(500, ReplyPayload.Error("Server is not running.", 500));
         }
+
+        PlayerAELinkStorage storage = PlayerAELinkStorage.get(server.overworld());
+
 
         return RestResponse.ok(ReplyPayload.Success(storage));
     }

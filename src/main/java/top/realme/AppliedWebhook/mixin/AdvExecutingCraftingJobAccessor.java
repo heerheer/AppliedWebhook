@@ -1,13 +1,14 @@
 package top.realme.AppliedWebhook.mixin;
 
 import appeng.api.stacks.GenericStack;
-import appeng.crafting.execution.ExecutingCraftingJob;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
+
+import net.pedroksl.advanced_ae.common.logic.ExecutingCraftingJob;
 import top.realme.AppliedWebhook.BaseExecutingCraftingJobAccessor;
 
 @Mixin(ExecutingCraftingJob.class)
-public interface ExecutingCraftingJobAccessor extends BaseExecutingCraftingJobAccessor {
+public interface AdvExecutingCraftingJobAccessor extends BaseExecutingCraftingJobAccessor {
 
     @Accessor("finalOutput")
     GenericStack awh_getFinalOutput();
@@ -19,5 +20,3 @@ public interface ExecutingCraftingJobAccessor extends BaseExecutingCraftingJobAc
     Integer awh_getPlayerId();
 
 }
-
-

@@ -2,6 +2,7 @@
   "required": true,
   "package": "top.realme.AppliedWebhook.mixin",
   "mixins": [
+    "AdvExecutingCraftingJobAccessor",
     "ExecutingCraftingJobAccessor",
     "MixinAdvCraftingCpuLogic",
     "MixinCraftingCpuLogic"

@@ -15,6 +15,12 @@ repositories {
     maven {
         url "https://cursemaven.com"
     }
+    maven {
+        url = uri("https://modmaven.dev/")
+        content {
+            includeGroup "de.mari_023"
+        }
+    }
 }
 
 base {
@@ -113,8 +119,14 @@ dependencies {
 
     // 对高级AE的可选依赖
     implementation "curse.maven:advae-1084104:7105167"
+    // 高级AE的库
     runtimeOnly "curse.maven:geckolib-388172:6659026"
     runtimeOnly "curse.maven:glodium-957920:5614731"
+
+    // 引入WT
+    implementation("de.mari_023:ae2wtlib_api:19.2.6")
+    implementation "de.mari_023:ae2wtlib:19.2.6"
+
 
     // 引入fastjson
     jarJar(implementation('com.alibaba.fastjson2:fastjson2:2.0.60'))

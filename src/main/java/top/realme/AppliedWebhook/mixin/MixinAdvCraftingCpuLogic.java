@@ -1,6 +1,5 @@
 package top.realme.AppliedWebhook.mixin;
 
-import appeng.crafting.execution.ExecutingCraftingJob;
 import com.mojang.logging.LogUtils;
 import net.neoforged.neoforge.common.NeoForge;
 import net.pedroksl.advanced_ae.common.logic.ElapsedTimeTracker;
@@ -14,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import top.realme.AppliedWebhook.ae.event.AECraftingJobFinishEvent;
 
 import net.pedroksl.advanced_ae.common.logic.AdvCraftingCPULogic;
+import net.pedroksl.advanced_ae.common.logic.ExecutingCraftingJob;
 
 @Pseudo
 @Mixin(AdvCraftingCPULogic.class)
@@ -49,7 +49,7 @@ public abstract class MixinAdvCraftingCpuLogic {
     @Unique
     private void appliedWebhook$onCraftingJobFinished(ExecutingCraftingJob job, boolean success,long duration) {
         // 自定义的事件触发点
-        var accessor = (ExecutingCraftingJobAccessor) job;
+        var accessor = (AdvExecutingCraftingJobAccessor) job;
         NeoForge.EVENT_BUS.post(
                 new AECraftingJobFinishEvent(
                         accessor.awh_getFinalOutput(),

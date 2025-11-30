@@ -1,12 +1,16 @@
 package top.realme.AppliedWebhook.ae;
 
 import appeng.api.config.Actionable;
+import appeng.api.config.PowerUnit;
 import appeng.api.networking.IGrid;
-import appeng.api.networking.crafting.ICraftingLink;
-import appeng.api.networking.crafting.ICraftingService;
+import appeng.api.networking.crafting.*;
+import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.storage.AEKeyFilter;
+import appeng.me.helpers.PlayerSource;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import org.jetbrains.annotations.Nullable;
 import top.realme.AppliedWebhook.ae.model.AECpuInfo;
 import top.realme.AppliedWebhook.ae.model.AEJobInfo;
 
@@ -15,7 +19,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class AECraftingUtil {
-
 
 
     /**
@@ -36,6 +39,48 @@ public class AECraftingUtil {
             return service.getCraftables((aeKey) -> aeKey.toString().contains(idProbe)).stream().map(k->k.toString()).toList();
         });
     }
+
+
+    /**
+     * 查询所有可以合成的物品
+     */
+    public static CompletableFuture<List<String>> craftables(UUID uuid) {
+        return AEGridQueryUtil.grid(uuid).thenApply(grid -> {
+            if (grid == null) return List.of();
+
+            var service = service(grid);
+            return service.getCraftables((aeKey) -> true).stream().map(k->k.toString()).toList();
+        });
+    }
+
+    public static CompletableFuture<Boolean> canCraft(UUID uuid, AEKey key) {
+        return AEGridQueryUtil.grid(uuid).thenApply(grid -> {
+            if (grid == null) return false;
+
+            var service = service(grid);
+            return service.isCraftable(key) ;
+        });
+    }
+
+    public  static CompletableFuture<ICraftingPlan> sim(UUID uuid, AEKey key, long amount) {
+        return AEGridQueryUtil.grid(uuid).thenApply(grid -> {
+            if (grid == null) return null;
+
+            var service = service(grid);
+            try {
+                IActionSource source = IActionSource.empty();
+                var requester = new WebhookSimulationRequester(source);
+                return service.beginCraftingCalculation(
+                        grid.getPivot().getLevel(),
+                        requester,
+                        key,
+                        amount, CalculationStrategy.REPORT_MISSING_ITEMS).get();
+            } catch (Exception e) {
+                return null;
+            }
+        });
+    }
+
 
     public static CompletableFuture<Map<String, AECpuInfo>> cpus(UUID uuid) {
         return AEGridQueryUtil.grid(uuid).thenApply(grid -> {

@@ -1,5 +1,6 @@
 package top.realme.AppliedWebhook.data;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import com.google.gson.Gson;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
@@ -14,6 +15,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.nbt.NbtUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +38,18 @@ import java.util.UUID;
  */
 public class PlayerAELinkStorage extends SavedData {
 
-    private final Map<UUID, GlobalPos> playerLinks = new HashMap<>();
+    public static class LinkData {
+        @Nullable
+        public GlobalPos pos;   // 原版 AE2 用
+        public long frequency;  // wtlib 量子频率，-1 = 未设置
+    }
+
+    @JSONField
+    private final Map<UUID, LinkData> playerLinks = new HashMap<>();
+
+    public Map<UUID, LinkData> getPlayerLinks() {
+        return playerLinks;
+    }
 
     // ---------- 加载 ----------
     public static PlayerAELinkStorage load(CompoundTag tag, HolderLookup.Provider provider) {
@@ -48,25 +61,49 @@ public class PlayerAELinkStorage extends SavedData {
             CompoundTag entry = list.getCompound(i);
 
             UUID player = entry.getUUID("Player");
-            GlobalPos pos = readGlobalPos(entry.getCompound("LinkPos"));
-            if (pos == null) {
-                continue; // 跳过无效位置
+
+            LinkData link = new LinkData();
+
+            // 加载 AE2 原版位置（兼容旧存档）
+            if (entry.contains("LinkPos", Tag.TAG_COMPOUND)) {
+                link.pos = readGlobalPos(entry.getCompound("LinkPos"));
             }
 
-            data.playerLinks.put(player, pos);
+            // 加载量子频率（可选）
+            if (entry.contains("Frequency", Tag.TAG_LONG)) {
+                link.frequency = entry.getLong("Frequency");
+            } else {
+                link.frequency = -1;
+            }
+
+            data.playerLinks.put(player, link);
         }
 
         return data;
     }
+
     // ---------- 保存 ----------
     @Override
     public @NotNull CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
         var list = new net.minecraft.nbt.ListTag();
 
         for (var entry : playerLinks.entrySet()) {
+            UUID player = entry.getKey();
+            LinkData link = entry.getValue();
+
             CompoundTag e = new CompoundTag();
-            e.putUUID("Player", entry.getKey());
-            e.put("LinkPos", writeGlobalPos(entry.getValue()));
+            e.putUUID("Player", player);
+
+            // 保存 AE2 原版连接位置
+            if (link.pos != null) {
+                e.put("LinkPos", writeGlobalPos(link.pos));
+            }
+
+            // 保存量子频率
+            if (link.frequency >= 0) {
+                e.putLong("Frequency", link.frequency);
+            }
+
             list.add(e);
         }
 
@@ -75,26 +112,34 @@ public class PlayerAELinkStorage extends SavedData {
     }
 
     // ---------- 访问 ----------
-    public void set(UUID player, GlobalPos pos) {
-        playerLinks.put(player, pos);
-        setDirty(); // 标记数据需要保存
+    public void setPos(UUID player, @Nullable GlobalPos pos) {
+        var link = playerLinks.computeIfAbsent(player, k -> new LinkData());
+        link.pos = pos;
+        setDirty();
     }
 
-    public GlobalPos get(UUID player) {
-        return playerLinks.get(player);
+    public @Nullable GlobalPos getPos(UUID player) {
+        var link = playerLinks.get(player);
+        return link == null ? null : link.pos;
     }
 
-    public boolean has(UUID player) {
-        return playerLinks.containsKey(player);
+    public void setFrequency(UUID player, long freq) {
+        var link = playerLinks.computeIfAbsent(player, k -> new LinkData());
+        link.frequency = freq;
+        setDirty();
     }
 
-    @Override
-    public String toString() {
-        Gson gson = new Gson();
-        return gson.toJson(playerLinks);
+    public long getFrequency(UUID player) {
+        var link = playerLinks.get(player);
+        return link == null ? -1 : link.frequency;
     }
 
-    // ---------- 获取实例 ----------
+    public boolean hasAny(UUID player) {
+        var link = playerLinks.get(player);
+        return link != null && (link.pos != null || link.frequency >= 0);
+    }
+
+    // ---------- 实例 ----------
     public static PlayerAELinkStorage get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(
                 new SavedData.Factory<>(
@@ -105,39 +150,29 @@ public class PlayerAELinkStorage extends SavedData {
         );
     }
 
-    /**
-     * 将全局位置转为一个包含维度和pos的tag
-     * @param pos
-     * @return
-     */
+    // ---------- GlobalPos 写入/读取 ----------
     public static CompoundTag writeGlobalPos(GlobalPos pos) {
         CompoundTag tag = new CompoundTag();
-
-        // 写维度 ID，例如 "minecraft:overworld"
         tag.putString("Dimension", pos.dimension().location().toString());
-
-        // 写 BlockPos
         tag.put("Pos", NbtUtils.writeBlockPos(pos.pos()));
-
         return tag;
     }
 
-    /**
-     * 从LinkPos对象中读取全局位置
-     * @param tag
-     * @return
-     */
     public static GlobalPos readGlobalPos(CompoundTag tag) {
-        if (!tag.contains("Dimension")) {
-            return null;
-        }
+        if (!tag.contains("Dimension")) return null;
+
         String dimId = tag.getString("Dimension");
         ResourceKey<Level> dimension =
                 ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimId));
 
-        Optional<BlockPos> pos = NbtUtils.readBlockPos(tag,"Pos");
-        // 缺失 Pos 或格式错误
+        Optional<BlockPos> pos = NbtUtils.readBlockPos(tag, "Pos");
         return pos.map(blockPos -> GlobalPos.of(dimension, blockPos)).orElse(null);
+    }
+
+    @Override
+    public String toString() {
+        Gson gson = new Gson();
+        return gson.toJson(playerLinks);
     }
 
 }
