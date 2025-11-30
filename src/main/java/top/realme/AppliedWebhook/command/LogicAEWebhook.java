@@ -41,6 +41,7 @@ public class LogicAEWebhook {
 
         if (grid == null) {
 
+            // 判断是否安装了 ae2wtlib
             if (ModList.get().isLoaded("ae2wtlib")) {
 
                 if (stack.getItem() instanceof de.mari_023.ae2wtlib.api.terminal.ItemWT wtItem) {
